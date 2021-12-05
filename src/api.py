@@ -21,7 +21,7 @@ from src.exceptions import (
 logger = logging.getLogger(__name__)
 
 
-def update_ynab(account_name, retries, delay):
+def update_ynab(account_name, retries, delay, start_date):
     """Call the N26 API with account name specified, download all the transactions, and
     bulk push them to YNAB through their API.
 
@@ -30,6 +30,7 @@ def update_ynab(account_name, retries, delay):
         file.
         retry (int): Number of retries when downloading the n26 transactions
         delay (int): Number of seconds delay between retries
+        start_date (datetime): Start date for exporting transactions
     """
     ynab_conf = load_ynab_config()["ynab"]
     n26_conf = get_n26_account_config(account_name)
@@ -42,7 +43,7 @@ def update_ynab(account_name, retries, delay):
     path = os.path.join("logs", filename)
     pd.DataFrame(transactions).to_csv(path, sep=",", index=False)
 
-    transactions = filter_transactions(transactions)
+    transactions = filter_transactions(transactions, start_date)
     upload_n26_transactions_to_ynab(
         transactions_n26=transactions,
         budget_name=budget_name,
@@ -50,7 +51,7 @@ def update_ynab(account_name, retries, delay):
     )
 
 
-def filter_transactions(transactions):
+def filter_transactions(transactions, start_date):
     """
     This function is intended to be applied to the raw list of transactions provided by
     the N26 API.
@@ -58,6 +59,7 @@ def filter_transactions(transactions):
     Args:
         transactions (list): list of dictionaries, one dict per transaction, as given by
         the N26 API.
+        start_date (datetime): Start date for exporting transactions.
 
     Returns:
         list: same format as the input transactions list but potentially shortened.
@@ -72,9 +74,9 @@ def filter_transactions(transactions):
         f"{len(transactions)} transactions remaining after applying the filter!"
     )
 
-    # Filter transactions from more then 5 years ago. YNAB restriction, cannot handle
+    # Filter transactions from more than 5 years ago. YNAB restriction, cannot handle
     # transactions with more than 5 years old.
-    threshold = datetime.now() - timedelta(days = 365*5-30)  # Now - (5 years - 1 month)
+    threshold = max(datetime.now() - timedelta(days = 365*5-30), start_date)  # Now - (5 years - 1 month)
 
     transactions = filter(
         lambda t: datetime.fromtimestamp(t["visibleTS"] / 1000) > threshold,

@@ -1,5 +1,6 @@
 import argparse
 import logging.config
+from datetime.datetime import strptime
 from src.api import update_ynab
 from src.paths import get_log_config_filepath
 
@@ -39,11 +40,25 @@ if __name__ == "__main__":
         help="Number of seconds delay between retries",
     )
 
+    parser.add_argument(
+        "-t",
+        "--start_date",
+        type=str,
+        default="",
+        help="Start date after which transactions should be exported in '%Y-%m-%d' format."
+    )
+
     results = parser.parse_args()
 
+    try:
+        start_date = strptime(results.start_date)
+    except ValueError:
+        logging.error(
+            "Invalid start_date, make sure to use the '%Y-%m-%d format. See: "
+            "https://docs.python.org/3/library/datetime.html?highlight=strptime#strftime-and-strptime-behavior")
     # Run the update process
     logger.info(f"Requested 💰 YNAB update for account name: {results.account}")
     update_ynab(
-        results.account, retries=int(results.retries), delay=int(results.retries)
+        results.account, retries=int(results.retries), delay=int(results.retries), start_date=start_date
     )
     logger.info(f"YNAB update performed successfully! 🎉🎊🥳")
