@@ -1,6 +1,6 @@
 import argparse
 import logging.config
-from datetime.datetime import strptime
+from datetime import datetime
 from src.api import update_ynab
 from src.paths import get_log_config_filepath
 
@@ -44,14 +44,13 @@ if __name__ == "__main__":
         "-t",
         "--start_date",
         type=str,
-        default="",
         help="Start date after which transactions should be exported in '%Y-%m-%d' format."
     )
 
     results = parser.parse_args()
 
     try:
-        start_date = strptime(results.start_date)
+        start_date = datetime.strptime(results.start_date, "%Y-%m-%d")
     except ValueError:
         logging.error(
             "Invalid start_date, make sure to use the '%Y-%m-%d format. See: "

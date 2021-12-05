@@ -76,13 +76,17 @@ def filter_transactions(transactions, start_date):
 
     # Filter transactions from more than 5 years ago. YNAB restriction, cannot handle
     # transactions with more than 5 years old.
-    threshold = max(datetime.now() - timedelta(days = 365*5-30), start_date)  # Now - (5 years - 1 month)
+    threshold = max(datetime.now() - timedelta(days=365 * 5 - 30), start_date)  # Now - (5 years - 1 month)
 
     transactions = filter(
         lambda t: datetime.fromtimestamp(t["visibleTS"] / 1000) > threshold,
         transactions
     )
-    return list(transactions)
+    transactions = list(transactions)
+    logger.info(
+        f"{len(transactions)} transactions remaining after applying cutoff date!"
+    )
+    return transactions
 
 
 def download_n26_transactions(account_name, retries=0, delay=60):
