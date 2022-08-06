@@ -6,9 +6,6 @@ ENV LANG=C.UTF-8
 # Avoid apt installations to require user interaction
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install crontab
-RUN apt-get update && apt-get -y install cron
-
 # Install pyenv
 ## Install dependencies for pyenv
 RUN apt update && apt install --no-install-recommends -y \
@@ -48,18 +45,14 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Copy all sources into container
 COPY src src
 
+# Logging
+COPY logging.ini logging.ini
+
+# Copy entrypoint script
+COPY run_app.sh run_app.sh
+
 # Copy main.py file into container
 COPY main.py main.py
 
-# Copy logging configuration into container
-COPY logging.ini logging.ini
-
-# Copy configure_crontabs.sh into container
-COPY configure_crontabs.sh configure_crontabs.sh
-
-# Create logs dir
-RUN mkdir logs
-
-# If the CRONTAB expression is not defined, just run the python command, otherwise
-# just wait for the crontab triggers.
-CMD if [ -z $CRONTAB ]; then for ACCOUNT in $ACCOUNTS; do python main.py -a $ACCOUNT; done; else bash configure_crontabs.sh "$ACCOUNTS" "$CRONTAB"; fi
+# Run app
+CMD ["/bin/bash", "run_app.sh"]
